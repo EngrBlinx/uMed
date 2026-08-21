@@ -1,0 +1,98 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum AppointmentStatus {
+  BOOKED
+  CHECKED_IN
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  phone        String?
+  role         UserRole @default(PATIENT)
+  doctor       Doctor?
+  patient      Patient?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([role])
+}
+
+model Doctor {
+  id               String             @id @default(uuid())
+  userId           String             @unique
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialty        String
+  bio              String?
+  appointmentSlots AvailabilitySlot[]
+  appointments     Appointment[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([specialty])
+}
+
+model Patient {
+  id           String        @id @default(uuid())
+  userId       String        @unique
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateOfBirth  DateTime?
+  appointments Appointment[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model AvailabilitySlot {
+  id          String       @id @default(uuid())
+  doctorId    String
+  doctor      Doctor       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  startsAt    DateTime
+  endsAt      DateTime
+  appointment Appointment?
+  createdAt   DateTime     @default(now())
+
+  @@unique([doctorId, startsAt, endsAt])
+  @@index([doctorId, startsAt])
+}
+
+model Appointment {
+  id                 String            @id @default(uuid())
+  patientId          String
+  doctorId           String
+  availabilitySlotId String            @unique
+  patient            Patient           @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  doctor             Doctor            @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  availabilitySlot   AvailabilitySlot  @relation(fields: [availabilitySlotId], references: [id], onDelete: Restrict)
+  status             AppointmentStatus @default(BOOKED)
+  reason             String?
+  notes              String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([patientId, status])
+  @@index([doctorId, status])
+}
