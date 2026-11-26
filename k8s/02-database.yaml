@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: umed-postgres
+  namespace: umed
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: umed-postgres
+  template:
+    metadata:
+      labels:
+        app: umed-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: umed-secret
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: pgdata
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: umed-postgres
+  namespace: umed
+spec:
+  type: ClusterIP
+  selector:
+    app: umed-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

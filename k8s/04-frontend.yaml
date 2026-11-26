@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: umed-frontend
+  namespace: umed
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: umed-frontend
+  template:
+    metadata:
+      labels:
+        app: umed-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/engrblinx/umed-frontend:latest
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: umed-frontend
+  namespace: umed
+spec:
+  type: ClusterIP
+  selector:
+    app: umed-frontend
+  ports:
+    - port: 80
+      targetPort: 80

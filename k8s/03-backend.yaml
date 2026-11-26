@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: umed-backend
+  namespace: umed
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: umed-backend
+  template:
+    metadata:
+      labels:
+        app: umed-backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/<YOUR_GITHUB_USERNAME>/umed-backend:latest
+          ports:
+            - containerPort: 4000
+          envFrom:
+            - configMapRef:
+                name: umed-config
+            - secretRef:
+                name: umed-secret
+          readinessProbe:
+            tcpSocket:
+              port: 4000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 4000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: umed-backend
+  namespace: umed
+spec:
+  type: ClusterIP
+  selector:
+    app: umed-backend
+  ports:
+    - port: 4000
+      targetPort: 4000
