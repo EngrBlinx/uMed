@@ -2,19 +2,17 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Copy dependency manifests and Prisma schema first for Docker layer caching
+# Install dependencies first for Docker layer caching
 COPY package*.json ./
-COPY prisma ./prisma/
-
-# Install dependencies (includes tsx and prisma CLI) and generate Prisma Client
 RUN npm ci
-RUN npx prisma generate
 
-# Copy application source code
-COPY tsconfig.json ./
-COPY src ./src/
+# Copy prisma/, prisma.config.ts, tsconfig.json, and src/
+COPY . .
+
+# Generate Prisma Client
+RUN npx prisma generate
 
 EXPOSE 4000
 
-# Apply pending database migrations on startup, then launch Express via tsx
+# Run migrations (or use `npx prisma db push` if you have no prisma/migrations folder)
 CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
